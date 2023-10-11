@@ -1,0 +1,168 @@
+﻿@page "/sell"
+@using IMS.UseCases.Clients
+@using IMS.Plugins.EFCore
+@using IMS.UseCases.Interfaces
+@using IMS.UseCases.PluginInterfaces
+@attribute [Authorize]
+@inject ISellProductUseCase SellProductUseCase
+@inject IViewClientByNameUseCase ViewClientByNameUseCase
+@inject IViewProductByIdUseCase ViewProductByIdUseCase
+@inject ICreateSalesRep CreateSalesRep
+@inject IJSRuntime JsRuntime
+
+<ErrorMessageComponent ErrorMessage="@errorMessage"></ErrorMessageComponent>
+<h3 class="text-center">Vendre le produit</h3>
+<br/>
+@if (sellViewModel.ProductItems != null)
+{
+    <EditForm Model="sellViewModel" OnValidSubmit="OnValidSubmit">
+        <DataAnnotationsValidator></DataAnnotationsValidator>
+        <ValidationSummary></ValidationSummary>
+        <div class="form-group row">
+            <label for="client" class="col-sm-2 col-form-label">Nom du Client</label>
+            <div class="col-sm-10">
+                <InputSelect class="form-control" id="clientName" @bind-Value="sellViewModel.ClientName">
+                    <option value="">--Choisir un Client--</option>
+                    @foreach (var client in clients)
+                    {
+                        <option value="@client.ClientName">@client.ClientName</option>
+                    }
+                </InputSelect>
+            </div>
+        </div>
+        <br/>
+        <table class="table">
+            <thead>
+            <tr>
+                <th>Produit à vendre</th>
+                <th>Prix</th>
+                <th>Quantité</th>
+                <th>Montant</th>
+                <th>Action</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var item in sellViewModel.ProductItems)
+            {
+                <tr>
+                    <td>
+                        <ViewProductsSellComponent OnSelectProduct="(product) => OnSelectProduct(product, item)" DisplaySearchResult="true"></ViewProductsSellComponent>
+                        <InputText inv="inv" class="form-control" @bind-Value="item.ProductName" disabled></InputText>
+                        <input type="hidden" value="@item.ProductId"/>
+                    </td>
+                    <td>@item.price.ToString("c")</td>
+                    <td>
+                        <InputNumber id="qty" class="form-control" @bind-Value="item.QuantityToSell" @onchange="ValidateQuantities"></InputNumber>
+                    </td>
+                    <td>@((item.price * item.QuantityToSell).ToString("c"))</td>
+                    <td>
+                        <button type="button" @onclick="() => RemoveProduct(item)" class="btn btn-danger">Remove</button>
+                    </td>
+                </tr>
+            }
+            <tr style="font-weight: bolder">
+                <td colspan="4">Total Général</td>
+                <td>@(sellViewModel.ProductItems.Sum(item => item.price * item.QuantityToSell).ToString("c"))</td>
+            </tr>
+            </tbody>
+        </table>
+        <br/>
+        <button type="button" @onclick="AddProduct" class="btn btn-primary">Add Product</button>
+        <button type="submit" class="btn btn-success">Vendre</button>
+    </EditForm>
+}
+
+@code {
+    private List<SellViewModel> sellViewModels = new List<SellViewModel>();
+    private SellViewModel? sellViewModel = new SellViewModel();
+    private string? errorMessage;
+    private List<ProductItem> ProductItems = new List<ProductItem>();
+    private List<Client> clients = new List<Client>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        sellViewModel = new SellViewModel
+        {
+            ProductItems = new List<ProductItem> { new ProductItem() }
+        };
+        clients = await ViewClientByNameUseCase.ExecuteAsync();
+    }
+
+    private async Task OnValidSubmit()
+    {
+        var newSales = new Sale
+        {
+            ClientName = sellViewModel.ClientName,
+            SalesDate = DateTime.Now,
+            AmountPaid = sellViewModel.ProductItems.Sum(item => item.price * item.QuantityToSell)
+        };
+        var salesId = await CreateSalesRep.ExecuteAsync(newSales);
+        if (sellViewModel is {ProductItems: not null })
+        {
+            foreach (var item in sellViewModel.ProductItems)
+            {
+                await SellProductUseCase.ExecuteAsync(
+                    salesId,
+                    Guid.NewGuid().ToString(),
+                    new Product { ProductId = item.ProductId, ProductName = item.ProductName, Price = item.price, Quantity = item.Quantity },
+                    item.QuantityToSell,
+                    sellViewModel.ClientName);
+            }
+            await JsRuntime.InvokeVoidAsync("alert", "La transaction a été effectuée avec succès!");
+            ClearSellForm();
+        }
+    }
+
+    private async void ValidateQuantities()
+    {
+        foreach (var item in sellViewModel.ProductItems)
+        {
+            var product = await ViewProductByIdUseCase.ExecuteAsync(item.ProductId);
+            if (item.QuantityToSell > product.Quantity)
+            {
+                errorMessage = $"The quantity of the product {product.ProductName} is not enough. Only {product.Quantity}"+
+                $"are available";
+                break;
+            }
+            else
+            {
+                errorMessage = string.Empty;
+            }
+        }
+    }
+
+    private void ClearSellForm()
+    {
+        sellViewModel?.ProductItems.Clear();
+        if (sellViewModel != null) sellViewModel.ClientName = string.Empty;
+        sellViewModel = new SellViewModel();
+    }
+
+    private void OnSelectProduct(Product product, ProductItem item)
+    {
+        item.ProductId = product.ProductId;
+        item.ProductName = product.ProductName;
+        item.price = (double)product.SellingPrice;
+        item.Quantity = product.Quantity;
+
+        if (item.QuantityToSell < product.Quantity)
+        {
+            errorMessage = $"The quantity of the product is not enough. Only {product.Quantity} are available";
+        }
+    }
+
+    private void AddProduct()
+    {
+        sellViewModel.ProductItems.Add(new ProductItem());
+    }
+
+    private async Task RemoveProduct(ProductItem item)
+    {
+        var confirm = await JsRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to remove this product?");
+        if (confirm)
+        {
+            sellViewModel.ProductItems.Remove(item);
+        }
+    }
+
+}

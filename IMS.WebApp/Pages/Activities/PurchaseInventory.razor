@@ -1,0 +1,126 @@
+﻿@page "/purchase"
+@using IMS.Plugins.EFCore
+@using IMS.UseCases.Interfaces
+@attribute [Authorize]
+@inject IPurchaseInventoryUseCase PurchaseInventoryUseCase
+@inject IViewSuppliersByNameUseCase ViewSuppliersByNameUseCase
+@inject ICreatePurchaseRep CreatePurchaseRep
+@inject IJSRuntime JSRuntime
+
+<h3 class="text-center">Acheter l’inventaire</h3>
+<br/>
+@if (purchaseViewModel.InventoryItems != null)
+{
+    <EditForm Model="purchaseViewModel" OnValidSubmit="OnValidSubmit">
+        <DataAnnotationsValidator></DataAnnotationsValidator>
+        <ValidationSummary></ValidationSummary>
+        <div class="form-group row">
+            <label for="supplier" class="col-sm-2 col-form-label">Nom du Fournisseur</label>
+            <div class="col-sm-10">
+                <InputSelect class="form-control" id="supplierName" @bind-Value="purchaseViewModel.SupplierName">
+                    <option value="">--Choisir un Fournisseur--</option>
+                    @foreach (var supplier in suppliers)
+                    {
+                        <option value="@supplier.Name">@supplier.Name</option>
+                    }
+                </InputSelect>
+            </div>
+        </div>
+        <br/>
+        <table class="table styled-table">
+            <thead>
+            <tr>
+                <th>Nom d'article</th>
+                <th>Prix</th>
+                <th>Quantité</th>
+                <th>Montant</th>
+                <th>Action</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var item in purchaseViewModel.InventoryItems)
+            {
+                <tr>
+                    <td>
+                        <ViewInventoriesComponent OnSelectInventory="(inventory) => OnSelectInventory(inventory, item)" DisplaySearchResult="true"></ViewInventoriesComponent>
+                        <InputText inv="inv" class="form-control" @bind-Value="item.InventoryName" disabled></InputText>
+                        <input type="hidden" value="@item.InventoryId"/>
+                    </td>
+                    <td>@item.Price.ToString("c")</td>
+                    <td>
+                        <InputNumber id="qty" class="form-control"@bind-Value="item.QuantityToPurchase"></InputNumber>
+                    </td>
+                    <td>@((item.Price * item.QuantityToPurchase).ToString("c"))</td>
+                    <td>
+                        <button type="button" class="btn btn-danger" @onclick="() => RemoveInventory(item)">Remove</button>
+                    </td>
+                </tr>
+            }
+            <tr style="font-weight: bold">
+                <td colspan="3">Total Général</td>
+                <td>@(purchaseViewModel.InventoryItems.Sum(item => item.Price * item.QuantityToPurchase).ToString("c"))</td>
+            </tr>
+            </tbody>
+        </table>
+        <button type="button" class="btn btn-primary" @onclick="AddInventoryRow">Add Inventory</button>
+        <button type="submit" class="btn btn-success">Achat</button>
+    </EditForm>
+}
+
+@code {
+    private PurchaseViewModel? purchaseViewModel = new PurchaseViewModel();
+    private List<Supplier> suppliers = new List<Supplier>();
+    private List<InventoryItem> InventoryItems = new List<InventoryItem>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        purchaseViewModel = new PurchaseViewModel
+        {
+            InventoryItems = new List<InventoryItem> { new InventoryItem() }
+        };
+        suppliers = await ViewSuppliersByNameUseCase.ExecuteAsync();
+    }
+
+    private void OnSelectInventory(Inventory inventory, InventoryItem item)
+    {
+        item.InventoryId = inventory.InventoryId;
+        item.InventoryName = inventory.InventoryName;
+        item.Price = inventory.Price;
+        item.Quantity = inventory.Quantity;
+    }
+
+    private void AddInventoryRow()
+    {
+        purchaseViewModel.InventoryItems.Add(new InventoryItem());
+    }
+
+    private async Task RemoveInventory(InventoryItem item)
+    {
+        purchaseViewModel.InventoryItems.Remove(item);
+    }
+
+    private async Task OnValidSubmit()
+    {
+        var newPurchase = new Purchase
+        {
+            SupplierName = purchaseViewModel.SupplierName,
+            PurchaseDate = DateTime.Now,
+            AmountPaid = purchaseViewModel.InventoryItems.Sum(item => item.Price * item.QuantityToPurchase)
+        };
+
+        var purchaseId = await CreatePurchaseRep.ExecuteAsync(newPurchase);
+        foreach (var item in purchaseViewModel.InventoryItems)
+        {
+            await PurchaseInventoryUseCase.ExecuteAsync(
+                purchaseId,
+                Guid.NewGuid().ToString(),
+                new Inventory { InventoryId = item.InventoryId, InventoryName = item.InventoryName, Price = item.Price, Quantity = item.Quantity },
+                item.QuantityToPurchase,
+                purchaseViewModel.SupplierName);
+        }
+        await JSRuntime.InvokeVoidAsync("alert", "La transaction a été effectuée avec succès!");
+        InventoryItems.Clear();
+        purchaseViewModel = new PurchaseViewModel();
+    }
+
+}

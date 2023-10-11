@@ -1,0 +1,80 @@
+﻿@inject IViewSuppliersByNameUseCase ViewSuppliersByNameUseCase
+
+<div class="input-group">
+    <input type="text"
+           class="form-control form-control-lg"
+           placeholder="Veuillez saisir le nom du fournisseur ici pour effectuer une recherche"
+           @bind-value="supplierNameToSearch"
+           @bind-value:event="oninput"/>
+    <button type="button" class="input-group-text btn-success"
+            @onclick="@(async () => { await ViewSuppliers(); })">
+        Vue
+    </button>
+</div>
+@if (this.DisplaySearchResult
+     && _suppliers != null
+     && selectedSupplier == null)
+{
+    <div style="overflow-y:auto; max-height:300px; border:1px solid slategray; padding-top:5px">
+        <ul style="list-style-type:none">
+            @foreach (var supplier in _suppliers)
+            {
+                <li style="cursor:pointer" @onclick="@(async () => { await SelectSupplier(supplier); })"
+                    @key="supplier.SupplierId">
+                    @supplier.Name
+                </li>
+            }
+        </ul>
+    </div>
+}
+
+@code {
+    private string? _supplierNameToSearch;
+
+    private string? supplierNameToSearch
+    {
+        get => _supplierNameToSearch;
+        set
+        {
+            _supplierNameToSearch = value;
+            if (!string.IsNullOrWhiteSpace(_supplierNameToSearch) &&
+                _supplierNameToSearch.Length > 2)
+            {
+                ViewSuppliers();
+            }
+        }
+    }
+
+    private List<Supplier>? _suppliers;
+    private Supplier? selectedSupplier;
+
+    [Parameter]
+    public EventCallback<List<Supplier>> OnSearchSuppliers { get; set; }
+
+
+    [Parameter]
+    public bool DisplaySearchResult { get; set; } = false;
+
+    [Parameter]
+    public EventCallback<Supplier> OnSelectSupplier { get; set; }
+
+
+    private async Task ViewSuppliers()
+    {
+        var suppliers = (await ViewSuppliersByNameUseCase
+            .ExecuteAsync(supplierNameToSearch ?? string.Empty))?.ToList();
+
+        await OnSearchSuppliers.InvokeAsync(suppliers);
+        _suppliers = suppliers;
+        this.selectedSupplier = null;
+
+        StateHasChanged();
+    }
+
+    private async Task SelectSupplier(Supplier supplier)
+    {
+        await OnSelectSupplier.InvokeAsync(supplier);
+        selectedSupplier = supplier;
+    }
+
+}

@@ -1,0 +1,44 @@
+﻿@using IMS.UseCases.Clients
+@inject NavigationManager NavigationManager
+@inject IDeleteClientUseCase DeleteClientUseCase
+@inject IJSRuntime JSRuntime
+
+@if (Client != null)
+{
+    <tr>
+        <td>@Client.ClientId</td>
+        <td>@Client.ClientName</td>
+        <td>@Client.ContactInfo</td>
+        <td>@Client.PhoneNumber</td>
+        <td>@Client.PreferredPaymentMethod</td>
+        <td>
+            <button type="button" class="btn btn-outline-primary" @onclick="@(() => EditClient(Client.ClientId))">Modifier</button>
+            <button type="button" class="btn btn-danger" @onclick="@(async () => await DeleteClient(Client))">Supprimer</button>
+        </td>
+    </tr>
+}
+
+@code {
+
+    [Parameter]
+    public Client? Client { get; set; }
+
+    [Parameter]
+    public EventCallback OnClientDeleted { get; set; }
+
+    private void EditClient(int clientId)
+    {
+        NavigationManager.NavigateTo($"editclient/{clientId}");
+    }
+
+    private async Task DeleteClient(Client client)
+    {
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", $"Are you sure you want to delete this client '{client.ClientName}'?");
+        if (confirmed)
+        {
+            await DeleteClientUseCase.ExecuteAsync(client.ClientId);
+
+            await OnClientDeleted.InvokeAsync();
+        }
+    }
+}

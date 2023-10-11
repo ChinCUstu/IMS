@@ -1,0 +1,48 @@
+﻿@page "/addsupplier"
+@using IMS.UseCases.Suppliers
+
+
+@inject IAddSupplierUseCase AddSupplierUseCase
+@inject NavigationManager NavigationManager
+
+<h3>Ajouter un fournisseur</h3>
+<br/>
+@if (this.supplier != null)
+{
+    <EditForm Model="supplier" OnValidSubmit="OnValidSubmit">
+        <DataAnnotationsValidator/>
+        <ValidationSummary/>
+
+        <div class="form-group">
+            <label for="name">Nom</label>
+            <InputText id="name" @bind-Value="supplier.Name" class="form-control"/>
+        </div>
+
+        <div class="form-group">
+            <label for="contactInfo">Informations de contact</label>
+            <InputText id="contactInfo" @bind-Value="supplier.ContactInfo" class="form-control"/>
+        </div>
+
+        <br/>
+        <button type="submit" class="btn btn-primary">Enregistrer</button>
+    </EditForm>
+}
+
+@code {
+    private Supplier? supplier;
+
+    protected override void OnInitialized()
+    {
+        this.supplier = new Supplier();
+    }
+
+    private async Task OnValidSubmit()
+    {
+        if (this.supplier != null)
+        {
+            await AddSupplierUseCase.ExecuteAsync(this.supplier);
+            NavigationManager.NavigateTo("/suppliers");
+        }
+    }
+
+}

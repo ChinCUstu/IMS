@@ -1,0 +1,82 @@
+﻿@using IMS.CoreBusiness
+@inject IViewEquipmentsByNameUseCase ViewEquipmentsByNameUseCase
+
+<div class="input-group">
+    <input type="text"
+           class="form-control form-control-lg"
+           placeholder="Veuillez saisir le nom de l’équipement ici pour effectuer une recherche"
+           @bind-value="equipmentNameToSearch"
+           @bind-value:event="oninput"/>
+    <button type="button" class="input-group-text btn-success"
+            @onclick="@(async () => { await ViewEquipments(); })">
+        Vue
+    </button>
+</div>
+@if (this.DisplaySearchResult
+     && _equipments != null
+     && selectedEquipment == null)
+{
+    <div style="overflow-y:auto; max-height:300px; border:1px solid slategray; padding-top:5px">
+        <ul style="list-style-type:none">
+            @foreach (var equip in _equipments)
+            {
+                <li style="cursor:pointer" @onclick="@(async () => { await SelectEquipment(equip); })"
+                    @key="equip.EquipmentId">
+                    @equip.EquipmentName
+                </li>
+            }
+        </ul>
+    </div>
+}
+
+@code {
+    private string? _equipmentNameToSearch;
+
+    private string? equipmentNameToSearch
+    {
+        get => _equipmentNameToSearch;
+        set
+        {
+            _equipmentNameToSearch = value;
+            if (!string.IsNullOrWhiteSpace(_equipmentNameToSearch) &&
+                _equipmentNameToSearch.Length > 2)
+            {
+                ViewEquipments();
+            }
+        }
+    }
+
+    private List<Equipment>? _equipments;
+    private Equipment? selectedEquipment;
+
+    [Parameter]
+    public EventCallback<List<Equipment>> OnSearchEquipments { get; set; }
+
+
+    [Parameter]
+    public bool DisplaySearchResult { get; set; } = false;
+
+    [Parameter]
+    public EventCallback<Equipment> OnSelectEquipment { get; set; }
+
+
+    private async Task ViewEquipments()
+    {
+        var equipments = (await ViewEquipmentsByNameUseCase
+            .ExecuteAsync(equipmentNameToSearch ?? string.Empty))?.ToList();
+
+        await OnSearchEquipments.InvokeAsync(equipments);
+        _equipments = equipments;
+        this.selectedEquipment = null;
+
+    //we don't need this when clicking on the button, but we do need this when typing
+        StateHasChanged();
+    }
+
+    private async Task SelectEquipment(Equipment equipment)
+    {
+        await OnSelectEquipment.InvokeAsync(equipment);
+        selectedEquipment = equipment;
+    }
+
+}

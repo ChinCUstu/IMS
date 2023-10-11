@@ -1,0 +1,42 @@
+﻿@inject NavigationManager NavigationManager
+@inject IDeleteSupplierUseCase DeleteSupplierUseCase
+@inject IJSRuntime JSRuntime
+
+@if (Supplier != null)
+{
+    <tr>
+        <td>@Supplier.SupplierId</td>
+        <td>@Supplier.Name</td>
+        <td>@Supplier.ContactInfo</td>
+        <td>
+            <button type="button" class="btn btn-outline-primary" @onclick="@(() => EditSupplier(Supplier.SupplierId))">Modifier</button>
+            <button type="button" class="btn btn-danger" @onclick="@(async () => await DeleteSupplier(Supplier))">Supprimer</button>
+        </td>
+    </tr>
+}
+
+@code {
+
+    [Parameter]
+    public Supplier? Supplier { get; set; }
+
+    [Parameter]
+    public EventCallback OnSupplierDeleted { get; set; }
+
+    private void EditSupplier(int supplierId)
+    {
+        NavigationManager.NavigateTo($"editsupplier/{supplierId}");
+    }
+
+    private async Task DeleteSupplier(Supplier supplier)
+    {
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", $"Are you sure you want to delete the supplier '{supplier.Name}'?");
+        if (confirmed)
+        {
+            await DeleteSupplierUseCase.ExecuteAsync(supplier.SupplierId);
+
+            await OnSupplierDeleted.InvokeAsync();
+        }
+    }
+
+}

@@ -1,0 +1,79 @@
+﻿<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">B&B Investment</a>
+        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+    </div>
+</div>
+
+<div class="@NavMenuCssClass" @onclick="ToggleNavMenu">
+    <nav class="flex-column">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="oi oi-home" aria-hidden="true"></span> Accueil
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="inventories">
+                <span class="oi oi-plus" aria-hidden="true"></span> Inventaires
+            </NavLink>
+        </div>        
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="products">
+                <span class="oi oi-plus" aria-hidden="true"></span> Produits
+            </NavLink>
+        </div>        
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="purchase">
+                <span class="oi oi-plus" aria-hidden="true"></span> Acheter l’inventaire
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="equipments">
+                <span class="oi oi-plus" aria-hidden="true"></span> Équipement
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="suppliers">
+                <span class="oi oi-plus" aria-hidden="true"></span> Fournisseur
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="clients">
+                <span class="oi oi-plus" aria-hidden="true"></span> Clients
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="produce">
+                <span class="oi oi-plus" aria-hidden="true"></span> Produire le produit
+            </NavLink>
+        </div>        
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="sell">
+                <span class="oi oi-plus" aria-hidden="true"></span> Vendre le produit
+            </NavLink>
+        </div>
+        @* <div class="nav-item px-3"> *@
+        @*     <NavLink class="nav-link" href="inventoryreport"> *@
+        @*         <span class="oi oi-plus" aria-hidden="true"></span> Rapport d’inventaire *@
+        @*     </NavLink> *@
+        @* </div> *@
+        @* <div class="nav-item px-3"> *@
+        @*     <NavLink class="nav-link" href="productreport"> *@
+        @*         <span class="oi oi-plus" aria-hidden="true"></span> Rapport produit *@
+        @*     </NavLink> *@
+        @* </div> *@
+    </nav>
+</div>
+
+@code {
+    private bool collapseNavMenu = true;
+
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+}

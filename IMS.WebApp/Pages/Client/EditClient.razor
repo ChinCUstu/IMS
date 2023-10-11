@@ -1,0 +1,63 @@
+﻿@page "/editclient/{ClientId:int}"
+@using IMS.UseCases.Clients
+
+@attribute [Authorize]
+
+@inject IEditClientUseCase EditClientUseCase
+@inject NavigationManager NavigationManager
+@inject IViewClientByIdUseCase ViewClientByIdUseCase
+
+<h3>Modifier le Client</h3>
+<br/>
+@if (client != null)
+{
+    <EditForm Model="client" OnValidSubmit="OnValidSubmit">
+        <DataAnnotationsValidator/>
+        <ValidationSummary/>
+
+        <div class="form-group">
+            <label for="name">Nom</label>
+            <InputText id="name" @bind-Value="client.ClientName" class="form-control"/>
+        </div>
+        <div class="form-group">
+            <label for="contactInfo">Address</label>
+            <InputText id="contactInfo" @bind-Value="client.ContactInfo" class="form-control"/>
+        </div>
+        <div class="form-group">
+            <label for="phoneNumber">Numéro de téléphone</label>
+            <InputText id="phoneNumber" @bind-Value="client.PhoneNumber" class="form-control"/>
+        </div>
+        <div class="form-group">
+            <label for="preferredPaymentMethod">Méthode de paiement préferée</label>
+            <InputSelect id="preferredPaymentMethod" @bind-Value="client.PreferredPaymentMethod" class="form-control">
+                <option value="">Sélectionnez une option</option>
+                <option value="PayPal">PayPal</option>
+                <option value="Mobile Money">Mobile Money</option>
+                <option value="Bank Transfer">Bank Transfer</option>
+                <option value="Cash on Delivery">Cash on Delivery</option>
+            </InputSelect>
+        </div>
+        <br/>
+        <button type="submit" class="btn btn-primary">Enregistrer</button>
+    </EditForm>
+}
+
+@code {
+    private Client? client;
+    [Parameter] public int ClientId { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        client = await ViewClientByIdUseCase.ExecuteAsync(ClientId);
+    }
+
+    private async Task OnValidSubmit()
+    {
+        if (client != null)
+        {
+            await EditClientUseCase.ExecuteAsync(client);
+            NavigationManager.NavigateTo("/clients");
+        }
+    }
+
+}

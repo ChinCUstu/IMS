@@ -1,0 +1,66 @@
+﻿@page "/products"
+
+@attribute [Authorize]
+
+@inject NavigationManager NavigationManager
+@inject IViewProductsByNameUseCase ViewProductsByNameUseCase
+
+<h3>Liste de produits</h3>
+<br/>
+
+<ViewProductsComponent OnSearchProducts="OnSearchProducts"/>
+
+@if (listProducts != null)
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Nom</th>
+                <th>Prix</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach(var product in listProducts)
+            {
+                <ProductItemComponent 
+                    Product="product"
+                    OnProductDeleted="OnProductDeleted"/>
+            }
+        </tbody>
+    </table>    
+}
+<br/>
+<button type="button" class="btn btn-primary" @onclick="AddProduct">Ajouter un produit</button>
+
+
+@code {
+    private List<Product>? listProducts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProducts();
+    }
+
+    private void OnSearchProducts(List<Product> products)
+    {
+        listProducts = products;
+    }
+
+    private void AddProduct()
+    {
+        NavigationManager.NavigateTo("/addproduct");
+    }
+
+    private async Task OnProductDeleted()
+    {
+        await LoadProducts();
+    }
+
+    private async Task LoadProducts()
+    {
+        var prods = await ViewProductsByNameUseCase.ExecuteAsync();
+        listProducts = prods.ToList();
+    }
+
+}

@@ -1,0 +1,79 @@
+﻿@using IMS.UseCases.Clients
+@inject IViewClientByNameUseCase ViewClientByNameUseCase
+
+<div class="input-group">
+    <input type="text" 
+           class="form-control form-control-lg" 
+           placeholder="Veuillez saisir le nom du client ici pour effectuer une recherche" 
+           @bind-value="clientNameToSearch" 
+           @bind-value:event="oninput"/>
+    <button type="button" class="input-group-text btn-success" 
+            @onclick="@(async () => { await ViewClients(); })">Vue</button>
+</div>
+@if (DisplaySearchResult 
+     && _clients != null 
+     && selectedClient == null)
+{
+    <div style="overflow-y: auto; max-height: 300px;border: 1px solid slategray; padding-top: 5px">
+        <ul style="list-style-type:none">
+            @foreach (var client in _clients)
+            {
+                <li style="cursor: pointer" @onclick="@(async () => { await SelectClient(client); })"
+                    @key="client.ClientId">
+                    @client.ClientName
+                </li>
+            }
+        </ul>
+    </div>
+}
+
+@code {
+    private string? _clientNameToSearch;
+
+    private string? clientNameToSearch
+    {
+        get => _clientNameToSearch;
+        set
+        {
+            _clientNameToSearch = value;
+            if (!string.IsNullOrWhiteSpace(_clientNameToSearch) && _clientNameToSearch.Length > 2)
+            {
+                ViewClients();
+            }
+        }
+    }
+
+    private List<Client>? _clients;
+    private Client? selectedClient;
+
+
+    [Parameter]
+    public EventCallback<List<Client>> OnSearchClients { get; set; }
+
+
+    [Parameter]
+    public bool DisplaySearchResult { get; set; } = false;
+
+    [Parameter]
+    public EventCallback<Client> OnSelectClient { get; set; }
+
+
+    private async Task ViewClients()
+    {
+        var clients = (await ViewClientByNameUseCase
+            .ExecuteAsync(clientNameToSearch ?? string.Empty))?.ToList();
+
+        await OnSearchClients.InvokeAsync(clients);
+        _clients = clients;
+        selectedClient = null;
+
+        StateHasChanged();
+    }
+
+    private async Task SelectClient(Client client)
+    {
+        await OnSelectClient.InvokeAsync(client);
+        selectedClient = client;
+    }
+
+}

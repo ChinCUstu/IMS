@@ -1,0 +1,58 @@
+﻿@page "/editequipment/{id:int}"
+
+@inject NavigationManager NavigationManager
+@inject IViewEquipmentByIdUseCase ViewEquipmentByIdUseCase
+@inject IEditEquipmentUseCase EditEquipmentUseCase
+
+<h3>Edit Equipment</h3>
+<br/>
+@if (this.equipment != null)
+{
+    <EditForm Model="equipment" OnValidSubmit="OnValidSubmit">
+        <DataAnnotationsValidator/>
+        <ValidationSummary/>
+
+        <div class="form-group">
+            <label for="serialNo">No Série</label>
+            <InputText id="serialNo" @bind-Value="equipment.SerialNo" class="form-control"/>
+        </div>
+
+        <div class="form-group">
+            <label for="name">Nom</label>
+            <InputText id="name" @bind-Value="equipment.EquipmentName" class="form-control"/>
+        </div>
+
+        <div class="form-group">
+            <label for="marque">Marqué</label>
+            <InputText id="marque" @bind-Value="equipment.Marque" class="form-control"/>
+        </div>
+
+        <div class="form-group">
+            <label for="model">Model</label>
+            <InputText id="model" @bind-Value="equipment.Model" class="form-control"/>
+        </div>
+        <br/>
+        <button type="submit" class="btn btn-primary">Enregistrer</button>
+
+    </EditForm>
+}
+
+@code {
+
+    private Equipment equipment;
+
+    [Parameter]
+    public int Id { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        this.equipment = await ViewEquipmentByIdUseCase.ExecuteAsync(this.Id);
+    }
+
+    private void OnValidSubmit()
+    {
+        EditEquipmentUseCase.ExecuteAsync(this.equipment);
+        NavigationManager.NavigateTo("/equipments");
+    }
+
+}

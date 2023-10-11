@@ -1,0 +1,59 @@
+﻿<div class="form-group">
+    <label>Equipments</label>
+    <ViewEquipmentsComponent
+        DisplaySearchResult="true"
+        OnSelectEquipment="OnSelectEquipment">
+    </ViewEquipmentsComponent>
+</div>
+@if (ProductEquipments != null && ProductEquipments.Count > 0)
+{
+    <table class="table">
+        <thead>
+        <tr>
+            <th>Nom</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var productEquipment in this.ProductEquipments)
+        {
+            if (productEquipment?.Equipment != null)
+            {
+                <tr>
+                    <td>
+                        @productEquipment.Equipment.EquipmentName
+                    </td>
+                    <td>
+                        <button class="btn btn-link" type="button" @onclick="@(() => RemoveEquipment(productEquipment))">Supprimer</button>
+                    </td>
+                </tr>
+            }
+        }
+        </tbody>
+    </table>
+}
+
+@code {
+
+    [Parameter]
+    public EventCallback<List<ProductEquipment>> OnEquipmentSelected { get; set; }
+
+    [Parameter]
+    public List<ProductEquipment> ProductEquipments { get; set; } = new List<ProductEquipment>();
+
+    private async Task OnSelectEquipment(Equipment equipment)
+    {
+        if (!ProductEquipments.Any(x => x.Equipment.EquipmentName.Equals(equipment.EquipmentName, StringComparison.OrdinalIgnoreCase)))
+        {
+            this.ProductEquipments.Add(new ProductEquipment { EquipmentId = equipment.EquipmentId, Equipment = equipment });
+        }
+
+        await OnEquipmentSelected.InvokeAsync(this.ProductEquipments);
+    }
+
+    private void RemoveEquipment(ProductEquipment productEquipment)
+    {
+        this.ProductEquipments.Remove(productEquipment);
+    }
+
+}

@@ -1,0 +1,63 @@
+﻿@page "/suppliers"
+
+@inject NavigationManager NavigationManager
+@inject IViewSuppliersByNameUseCase ViewSuppliersByNameUseCase
+
+<h3>List des fournisseurs</h3>
+<br/>
+
+<ViewSuppliersComponent OnSearchSuppliers="OnSearchSuppliers"/>
+
+@if (listSuppliers != null)
+{
+    <table class="table">
+        <thead>
+        <tr>
+            <th>Id</th>
+            <th>Nom</th>
+            <th>Informations de Contact</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var supplier in listSuppliers)
+        {
+            <SupplierItemComponent Supplier="supplier" OnSupplierDeleted="OnSupplierDeleted"/>
+        }
+        </tbody>
+    </table>
+}
+
+<br/>
+<button type="button" class="btn btn-success" @onclick="AddSupplier">Ajouter un Fournisseur</button>
+
+@code {
+    private List<Supplier>? listSuppliers;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSuppliers();
+    }
+
+    private void OnSearchSuppliers(List<Supplier> suppliers)
+    {
+        listSuppliers = suppliers;
+    }
+
+    private void AddSupplier()
+    {
+        NavigationManager.NavigateTo("/addsupplier");
+    }
+
+    private async Task OnSupplierDeleted()
+    {
+        await LoadSuppliers();
+    }
+
+    private async Task LoadSuppliers()
+    {
+        var sup = await ViewSuppliersByNameUseCase.ExecuteAsync();
+        listSuppliers = sup.ToList();
+    }
+
+}

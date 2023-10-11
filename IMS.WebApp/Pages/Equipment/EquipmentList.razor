@@ -1,0 +1,68 @@
+﻿@page "/equipments"
+
+@attribute [Authorize]
+
+@inject NavigationManager NavigationManager
+@inject IViewEquipmentsByNameUseCase ViewEquipmentsByNameUseCase 
+
+<h3>Equipment List</h3>
+<br/>
+
+<ViewEquipmentsComponent OnSearchEquipments="OnSearchEquipments"/>
+
+@if (listEquipmemts != null)
+{
+    <table class="table">
+        <thead>
+        <tr>
+            <th>No Série</th>
+            <th>Nom</th>
+            <th>Marque</th>
+            <th>Model</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var equipment in this.listEquipmemts)
+        {
+            <EquipmentItemComponent 
+                Equipment="equipment"
+                OnEquipmentDeleted="OnEquipmentDeleted"></EquipmentItemComponent>
+        }
+        </tbody>
+    </table>
+}
+<br/>
+<button type="button" class="btn btn-primary" @onclick="AddEquipment">Ajouter un équipement</button>
+
+@code {
+
+    private List<Equipment>? listEquipmemts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadEquipments();
+    }
+    
+    private void OnSearchEquipments(List<Equipment> equipments)
+    {
+        this.listEquipmemts = equipments;
+    }
+
+    private void AddEquipment()
+    {
+        NavigationManager.NavigateTo("/addequipment");
+    }
+
+    private async Task OnEquipmentDeleted()
+    {
+        await LoadEquipments();
+    }
+
+    private async Task LoadEquipments()
+    {
+        var equips = await ViewEquipmentsByNameUseCase.ExecuteAsync();
+        this.listEquipmemts = equips.ToList();
+    }
+
+}

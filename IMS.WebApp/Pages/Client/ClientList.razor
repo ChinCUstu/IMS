@@ -1,0 +1,69 @@
+﻿@page "/clients"
+
+@attribute [Authorize]
+
+@using IMS.UseCases.Clients
+
+@attribute [Authorize]
+@inject NavigationManager NavigationManager
+@inject IViewClientByNameUseCase ViewClientByNameUseCase
+
+<h3>Liste des Clients</h3>
+
+<ViewClientsComponent OnSearchClients="OnSearchClients"/>
+
+@if (listClients != null)
+{
+    <table class="table">
+        <thead>
+        <tr>
+            <th>Id</th>
+            <th>Nom</th>
+            <th>Informations de Contact</th>
+            <th>Numéro de téléphone</th>
+            <th>Méthode de paiement préférée</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var client in listClients)
+        {
+            <ClientItemComponent Client="client" OnClientDeleted="OnClientDeleted"/>
+        }
+        </tbody>
+    </table>
+}
+
+<br/>
+<button type="button" class="btn btn-success" @onclick="AddClient">Ajouter un Client</button>
+
+@code {
+    private List<Client>? listClients;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadClients();
+    }
+
+    private void OnSearchClients(List<Client> clients)
+    {
+        listClients = clients;
+    }
+
+    private void AddClient()
+    {
+        NavigationManager.NavigateTo("/addclient");
+    }
+
+    private async Task OnClientDeleted()
+    {
+        await LoadClients();
+    }
+
+    private async Task LoadClients()
+    {
+        var clt = await ViewClientByNameUseCase.ExecuteAsync();
+        listClients = clt.ToList();
+    }
+
+}

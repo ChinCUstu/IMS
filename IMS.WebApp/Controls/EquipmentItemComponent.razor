@@ -1,0 +1,38 @@
+﻿@inject NavigationManager NavigationManager
+@inject IDeleteEquipmentUseCase DeleteEquipmentUseCase
+
+@if (Equipment != null)
+{
+    <tr>
+        <td>@Equipment.SerialNo</td>
+        <td>@Equipment.EquipmentName</td>
+        <td>@Equipment.Marque</td>
+        <td>@Equipment.Model</td>
+        <td>
+            <button type="button" class="btn btn-light" @onclick="@(() => EditEquipment(Equipment.EquipmentId))">Modifier</button>
+            <button type="button" class="btn btn-light" @onclick="@(async () => await DeleteEquipment(Equipment))">Supprimer</button>
+        </td>
+    </tr>
+}
+
+@code {
+
+    [Parameter]
+    public Equipment? Equipment { get; set; }
+    
+    [Parameter] public EventCallback OnEquipmentDeleted { get; set; }
+
+    private void EditEquipment(int equipmentId)
+    {
+        NavigationManager.NavigateTo($"editequipment/{equipmentId}");
+    }
+
+    private async Task  DeleteEquipment(Equipment equipment)
+    {
+        await DeleteEquipmentUseCase.ExecuteAsync(equipment.EquipmentId);
+
+    //we will need to let the parent component know about our soft delete so that it can reload the products and refresh the screen
+        await OnEquipmentDeleted.InvokeAsync();
+    }
+
+}

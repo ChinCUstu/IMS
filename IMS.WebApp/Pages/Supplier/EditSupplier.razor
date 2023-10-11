@@ -1,0 +1,49 @@
+﻿@page "/editsupplier/{SupplierId:int}"
+
+@inject IEditSupplierUseCase EditSupplierUseCase
+@inject NavigationManager NavigationManager
+@inject IViewSupplierByIdUseCase ViewSupplierByIdUseCase
+
+
+<h3>Modifier le Fournisseur</h3>
+<br/>
+@if (this.supplier != null)
+{
+    <EditForm Model="supplier" OnValidSubmit="OnValidSubmit">
+        <DataAnnotationsValidator/>
+        <ValidationSummary/>
+        
+        <div class="form-group">
+            <label for="name">Nom</label>
+            <InputText id="name" @bind-Value="supplier.Name" class="form-control"/>
+        </div>
+        <div class="form-group">
+            <label for="name">Contact Info</label>
+            <InputText id="name" @bind-Value="supplier.ContactInfo" class="form-control"/>
+        </div>
+        
+        <br/>
+        <button type="submit" class="btn btn-success">Enregistrer</button>
+        
+    </EditForm>
+}
+@code {
+    [Parameter] public int SupplierId { get; set; }
+
+    private Supplier? supplier;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        this.supplier = await ViewSupplierByIdUseCase.ExecuteAsync(SupplierId);
+    }
+
+    private async Task OnValidSubmit()
+    {
+        if (this.supplier != null)
+        {
+            await EditSupplierUseCase.ExecuteAsync(this.supplier);
+            NavigationManager.NavigateTo("/suppliers");
+        }
+    }
+
+}
